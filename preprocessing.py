@@ -10,3 +10,8 @@ df_win = pd.read_csv("data/winnipeg_listings.csv").assign(city="Winnipeg")
 df_que = pd.read_csv("data/quebec_listings.csv").assign(city="Quebec")
 df_new = pd.read_csv("data/new_brunswick_listings.csv").assign(city="New Brunswick")
 
+# Combine into a single dataframe
+df = pd.concat([df_tor, df_ott, df_van, df_vic, df_mon, df_win, df_que, df_new], ignore_index=True)
+
+# Strip '$' sign and convert value to float
+df["price"] = df["price"].astype(str).str.replace(r"[\$,]", "", regex=True).astype(float)

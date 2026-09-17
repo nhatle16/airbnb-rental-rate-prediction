@@ -48,3 +48,16 @@ def plot_mi_scores(mi_scores):
     plt.barh(positions, mi_scores)
     plt.yticks(positions, ticks)
     plt.title("Mutual Information Scores")
+    
+if __name__ == "__main__":
+    # Example usage
+    df = pd.read_csv("data/new_brunswick_listings.csv")
+    X = df.drop(columns=["price"])
+    y = df["price"]
+    
+    mi_scores = make_mi_score(X, y)
+    print(f"Num. of feature with 0 score: {(mi_scores <= 0).sum()} / {len(mi_scores)}")
+    
+    plt.figure(dpi=100, figsize=(10, 14))
+    plot_mi_scores(mi_scores)
+    plt.show()

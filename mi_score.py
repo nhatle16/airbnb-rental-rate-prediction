@@ -11,6 +11,11 @@ def make_mi_score(X, y):
     """Calculate the mutual information score for each feature in X with respect to the target variable y."""
     X = X.copy()
     
+    # Drop columns that are completely null
+    all_null_cols = X.columns[X.isna().all()].tolist()
+    if all_null_cols:
+        X = X.drop(columns=all_null_cols)
+    
     # Identify the columns by type - numerical or categorical
     numerical_cols = X.select_dtypes(include=np.number).columns.tolist()
     categorical_cols = X.select_dtypes(exclude=np.number).columns.tolist()
@@ -52,6 +57,9 @@ def plot_mi_scores(mi_scores):
 if __name__ == "__main__":
     # Example usage
     df = pd.read_csv("data/new_brunswick_listings.csv")
+    
+    df = df.dropna(subset=["price"])  # Drop rows where price is NaN
+    
     X = df.drop(columns=["price"])
     y = df["price"]
     

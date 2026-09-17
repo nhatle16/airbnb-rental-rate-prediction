@@ -54,9 +54,35 @@ def plot_mi_scores(mi_scores):
     plt.yticks(positions, ticks)
     plt.title("Mutual Information Scores")
     
+def clear_airbnb_data(df):
+    """Clean Airbnb data by converting percentage and currency strings to float."""
+    df = df.copy()
+    
+    for col in df.select_dtypes(include='object').columns:
+        # Remove all None and NaN values from the column
+        valid_series = df[col].dropna().astype(str).str.strip()
+        
+        # Filter out empty strings
+        valid_series = valid_series[valid_series != '']
+        
+        if valid_series.empty:
+            continue
+        
+        # Strip percentage signs at the endand convert to float
+        if valid_series.str.match(r'^\d+(\.\d+)?%$').mean() > 0.8:
+            df[col] = df[col].astype(str).str.rstrip('%').replace('nan', np.nan)
+            df[col] = pd.to_numeric(df[col], errors='coerce') / 100.0
+        
+        # Strip dollar signs at the beginning and convert to float
+        if valid_series.str.match(r'^\$[\d,]+(\.\d+)?$').mean() > 0.8:
+            df[col] = df[col].astype(str).str.replace(r'[\$,]', '', regex=True).replace('nan', np.nan)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    return df
+
+
 if __name__ == "__main__":
     # Example usage
-    df = pd.read_csv("data/new_brunswick_listings.csv")
+    df = pd.read_csv("data/toronto_listings.csv")
     
     df = df.dropna(subset=["price"])  # Drop rows where price is NaN
     

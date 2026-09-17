@@ -39,3 +39,12 @@ def make_mi_score(X, y):
     mi_scores = mi_scores.sort_values(ascending=False)
 
     return mi_scores
+
+def plot_mi_scores(mi_scores):
+    """Plot the mutual information scores."""
+    mi_scores = mi_scores.sort_values(ascending=False)
+    positions = np.arange(len(mi_scores))
+    ticks = list(mi_scores.index)
+    plt.barh(positions, mi_scores)
+    plt.yticks(positions, ticks)
+    plt.title("Mutual Information Scores")

@@ -54,11 +54,11 @@ def plot_mi_scores(mi_scores):
     plt.yticks(positions, ticks)
     plt.title("Mutual Information Scores")
     
-def clear_airbnb_data(df):
+def clean_airbnb_data(df):
     """Clean Airbnb data by converting percentage and currency strings to float."""
     df = df.copy()
     
-    for col in df.select_dtypes(include='object').columns:
+    for col in df.select_dtypes(include=['object', 'string']).columns:
         # Remove all None and NaN values from the column
         valid_series = df[col].dropna().astype(str).str.strip()
         
@@ -83,10 +83,20 @@ def clear_airbnb_data(df):
 if __name__ == "__main__":
     # Example usage
     df = pd.read_csv("data/toronto_listings.csv")
+    df = clean_airbnb_data(df)
     
     df = df.dropna(subset=["price"])  # Drop rows where price is NaN
     
-    X = df.drop(columns=["price"])
+    # Drop non-feature columns (IDs, URLs, free-text) that would
+    # artificially inflate MI scores due to high cardinality
+    cols_to_drop = [
+        "price", "id", "listing_url", "scrape_id", "last_scraped", "source",
+        "picture_url", "host_id", "host_url", "host_profile_id",
+        "host_profile_url", "host_thumbnail_url", "host_picture_url",
+        "name", "description", "neighborhood_overview",
+        "host_about", "amenities", "license",
+    ]
+    X = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
     y = df["price"]
     
     mi_scores = make_mi_score(X, y)
@@ -94,4 +104,4 @@ if __name__ == "__main__":
     
     plt.figure(dpi=100, figsize=(10, 14))
     plot_mi_scores(mi_scores)
-    plt.savefig('mi_scores.png')
+    plt.savefig('before_fe/mi_scores.png')

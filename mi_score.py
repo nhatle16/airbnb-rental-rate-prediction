@@ -1,11 +1,11 @@
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
+import pandas as pd
+from sklearn.feature_selection import mutual_info_regression
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder
-from sklearn.feature_selection import mutual_info_classif
+
 
 def make_mi_score(X, y):
     """Calculate the mutual information score for each feature in X with respect to the target variable y."""
@@ -38,7 +38,7 @@ def make_mi_score(X, y):
     discrete_features = [col in categorical_cols or X[col].dtype == int for col in X.columns]
     
     # Calculate mutual information scores
-    mi_scores = mutual_info_classif(X, y, discrete_features=discrete_features)
+    mi_scores = mutual_info_regression(X, y, discrete_features=discrete_features, random_state=0)
     
     mi_scores = pd.Series(mi_scores, name="MI Score", index=X.columns)
     mi_scores = mi_scores.sort_values(ascending=False)
@@ -94,4 +94,4 @@ if __name__ == "__main__":
     
     plt.figure(dpi=100, figsize=(10, 14))
     plot_mi_scores(mi_scores)
-    plt.show()
+    plt.savefig('mi_scores.png')

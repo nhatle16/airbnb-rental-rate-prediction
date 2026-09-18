@@ -1,4 +1,5 @@
 import json
+
 import pandas as pd
 
 # Read multiple cities listings
@@ -24,7 +25,7 @@ def parse_amenities(val):
         return []
     try:
         return json.loads(val)
-    except Exception as e:
+    except Exception:
         return []
 
 # Apply transformation on 'amenities'
@@ -56,3 +57,12 @@ for col_name, keywords in high_value_amenities.items():
     df[col_name] = amenities_text.apply(lambda text: int(any(kw in text for kw in keywords)))
     
 df = df.drop(columns=["amenities"])
+
+# ----------------------- LICENSE ------------------------------
+# Has any license or registration
+df["has_license"] = df["license"].notna().astype(int)
+
+# License is exempted
+df["is_license_exempt"] = (df["license"].fillna("").str.strip().str.lower().str.contains("exempt").astype(int))
+
+df = df.drop(columns=["license"])

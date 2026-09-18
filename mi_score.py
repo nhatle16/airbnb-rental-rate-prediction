@@ -1,15 +1,20 @@
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
+import pandas as pd
+from sklearn.feature_selection import mutual_info_regression
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder
-from sklearn.feature_selection import mutual_info_classif
+
 
 def make_mi_score(X, y):
     """Calculate the mutual information score for each feature in X with respect to the target variable y."""
     X = X.copy()
+    
+    # Drop columns that are completely null
+    all_null_cols = X.columns[X.isna().all()].tolist()
+    if all_null_cols:
+        X = X.drop(columns=all_null_cols)
     
     # Identify the columns by type - numerical or categorical
     numerical_cols = X.select_dtypes(include=np.number).columns.tolist()
@@ -33,7 +38,7 @@ def make_mi_score(X, y):
     discrete_features = [col in categorical_cols or X[col].dtype == int for col in X.columns]
     
     # Calculate mutual information scores
-    mi_scores = mutual_info_classif(X, y, discrete_features=discrete_features)
+    mi_scores = mutual_info_regression(X, y, discrete_features=discrete_features, random_state=0)
     
     mi_scores = pd.Series(mi_scores, name="MI Score", index=X.columns)
     mi_scores = mi_scores.sort_values(ascending=False)
@@ -49,10 +54,49 @@ def plot_mi_scores(mi_scores):
     plt.yticks(positions, ticks)
     plt.title("Mutual Information Scores")
     
+def clean_airbnb_data(df):
+    """Clean Airbnb data by converting percentage and currency strings to float."""
+    df = df.copy()
+    
+    for col in df.select_dtypes(include=['object', 'string']).columns:
+        # Remove all None and NaN values from the column
+        valid_series = df[col].dropna().astype(str).str.strip()
+        
+        # Filter out empty strings
+        valid_series = valid_series[valid_series != '']
+        
+        if valid_series.empty:
+            continue
+        
+        # Strip percentage signs at the endand convert to float
+        if valid_series.str.match(r'^\d+(\.\d+)?%$').mean() > 0.8:
+            df[col] = df[col].astype(str).str.rstrip('%').replace('nan', np.nan)
+            df[col] = pd.to_numeric(df[col], errors='coerce') / 100.0
+        
+        # Strip dollar signs at the beginning and convert to float
+        if valid_series.str.match(r'^\$[\d,]+(\.\d+)?$').mean() > 0.8:
+            df[col] = df[col].astype(str).str.replace(r'[\$,]', '', regex=True).replace('nan', np.nan)
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    return df
+
+
 if __name__ == "__main__":
     # Example usage
-    df = pd.read_csv("data/new_brunswick_listings.csv")
-    X = df.drop(columns=["price"])
+    df = pd.read_csv("data/toronto_listings.csv")
+    df = clean_airbnb_data(df)
+    
+    df = df.dropna(subset=["price"])  # Drop rows where price is NaN
+    
+    # Drop non-feature columns (IDs, URLs, free-text) that would
+    # artificially inflate MI scores due to high cardinality
+    cols_to_drop = [
+        "price", "id", "listing_url", "scrape_id", "last_scraped", "source",
+        "picture_url", "host_id", "host_url", "host_profile_id",
+        "host_profile_url", "host_thumbnail_url", "host_picture_url",
+        "name", "description", "neighborhood_overview",
+        "host_about", "amenities", "license",
+    ]
+    X = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
     y = df["price"]
     
     mi_scores = make_mi_score(X, y)
@@ -60,4 +104,4 @@ if __name__ == "__main__":
     
     plt.figure(dpi=100, figsize=(10, 14))
     plot_mi_scores(mi_scores)
-    plt.show()
+    plt.savefig('before_fe/mi_scores.png')

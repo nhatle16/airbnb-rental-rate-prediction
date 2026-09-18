@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 
 # Read multiple cities listings
@@ -15,3 +16,43 @@ df = pd.concat([df_tor, df_ott, df_van, df_vic, df_mon, df_win, df_que, df_new],
 
 # Strip '$' sign and convert value to float
 df["price"] = df["price"].astype(str).str.replace(r"[\$,]", "", regex=True).astype(float)
+
+# FEATURE ENGINEERING
+# ----------------------- AMENITIES ------------------------------
+def parse_amenities(val):
+    if pd.isna(val) or not isinstance(val, str):
+        return []
+    try:
+        return json.loads(val)
+    except Exception as e:
+        return []
+
+# Apply transformation on 'amenities'
+amenities_series = df["amenities"].apply(parse_amenities)
+
+# New feat - number of amenities
+df["num_amenities"] = amenities_series.apply(len)
+
+# Lowercased text representation for fast keyword matching
+amenities_text = amenities_series.apply(lambda lst: " ".join(item.lower() for item in lst))
+print(amenities_text.head(5))
+
+# Create a mapping dictionary for new key/premium amenities and their keywords
+high_value_amenities = {
+    "has_free_parking": ["free parking", "free driveway parking", "free residential parking"],
+    "has_pool": ["pool"],
+    "has_hot_tub": ["hot tub"],
+    "has_air_con": ["air conditioning"],
+    "has_gym": ["gym"],
+    "has_balcony_patio": ["balcony", "patio"],
+    "has_dedicated_workspace": ["dedicated workspace"],
+    "has_view": ["view", "waterfront", "skyline view"],
+    "has_ev_charger": ["ev charger"],
+    "has_bbq_grill": ["bbq grill", "barbecue"],
+}
+
+# Create the new features from premium amenities
+for col_name, keywords in high_value_amenities.items():
+    df[col_name] = amenities_text.apply(lambda text: int(any(kw in text for kw in keywords)))
+    
+df = df.drop(columns=["amenities"])

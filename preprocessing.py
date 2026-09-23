@@ -76,3 +76,17 @@ df["is_shared_bath"] = (
     .str.contains("shared")
     .astype(int)
 )
+
+# Extract the numeric value of bathroom count
+bath_num = (
+    df["bathrooms_text"]
+    .fillna("")
+    .str.lower()
+    .str.extract(r"(\d+(?:\.\d+)?)")[0]
+    .astype(float)
+)
+is_half_bath = df["bathrooms_text"].fillna("").str.lower().str.contains("half-bath")
+df["bathrooms_num"] = bath_num.fillna(is_half_bath.map({True: 0.5, False: None}))
+
+# Drop text column and redundant null-heavy bathrooms column
+df = df.drop(columns=["bathrooms_text", "bathrooms"], errors="ignore")

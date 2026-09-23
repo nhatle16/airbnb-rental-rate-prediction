@@ -66,3 +66,13 @@ df["has_license"] = df["license"].notna().astype(int)
 df["is_license_exempt"] = (df["license"].fillna("").str.strip().str.lower().str.contains("exempt").astype(int))
 
 df = df.drop(columns=["license"])
+
+# ----------------------- BATHROOMS ------------------------------
+# Check if the bathroom is shared, 1 means shared while 0 means private
+df["is_shared_bath"] = (
+    df["bathrooms_text"]
+    .fillna("")
+    .str.lower()
+    .str.contains("shared")
+    .astype(int)
+)

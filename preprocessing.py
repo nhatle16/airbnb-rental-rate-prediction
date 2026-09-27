@@ -90,3 +90,15 @@ df["bathrooms_num"] = bath_num.fillna(is_half_bath.map({True: 0.5, False: None})
 
 # Drop text column and redundant null-heavy bathrooms column
 df = df.drop(columns=["bathrooms_text", "bathrooms"], errors="ignore")
+
+# ----------------------- REVIEWS & DATES ---------------------------
+df["has_reviews"] = (df["number_of_reviews"] > 0).astype(int)
+
+last_review_date = pd.to_datetime(df["last_review"], errors="coerce")
+reference_date = last_review_date.max()
+df["days_since_last_review"] = (reference_date - last_review_date).dt.days
+
+first_review_date = pd.to_datetime(df["first_review"], errors="coerce")
+df["days_since_first_review"] = (reference_date - first_review_date).dt.days
+
+df = df.drop(columns=["first_review", "last_review"], errors="ignore")

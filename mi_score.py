@@ -81,27 +81,43 @@ def clean_airbnb_data(df):
 
 
 if __name__ == "__main__":
-    # Example usage
-    df = pd.read_csv("data/toronto_listings.csv")
+    import os
+    import preprocessing
+
+    # Use the combined dataset with engineered features
+    df = preprocessing.df.copy()
     df = clean_airbnb_data(df)
-    
-    df = df.dropna(subset=["price"])  # Drop rows where price is NaN
-    
-    # Drop non-feature columns (IDs, URLs, free-text) that would
-    # artificially inflate MI scores due to high cardinality
+
+    # Drop listings with missing target
+    df = df.dropna(subset=["price"])
+
+    # Drop non-feature columns (IDs, URLs, text, dates) and potential leakage columns:
+    # - price_quote_*: quotes directly derived from/equal to target price
+    # - estimated_revenue_l365d: directly computed as price * estimated_occupancy
     cols_to_drop = [
         "price", "id", "listing_url", "scrape_id", "last_scraped", "source",
         "picture_url", "host_id", "host_url", "host_profile_id",
         "host_profile_url", "host_thumbnail_url", "host_picture_url",
         "name", "description", "neighborhood_overview",
-        "host_about", "amenities", "license",
+        "host_about", "amenities", "license", "first_review", "last_review",
+        "bathrooms_text", "bathrooms", "host_name", "host_location",
+        "price_quote_checkin_date", "price_quote_checkout_date", "price_quote_raw",
+        "price_quote_total_price", "price_quote_price_per_night",
+        "estimated_revenue_l365d", "calendar_last_scraped"
     ]
     X = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
     y = df["price"]
-    
+
+    print(f"Calculating MI scores on {X.shape[0]} rows and {X.shape[1]} features...")
     mi_scores = make_mi_score(X, y)
-    print(f"Num. of feature with 0 score: {(mi_scores <= 0).sum()} / {len(mi_scores)}")
-    
-    plt.figure(dpi=100, figsize=(10, 14))
+    print(f"Num. of features with 0 score: {(mi_scores <= 0).sum()} / {len(mi_scores)}")
+
+    os.makedirs("results", exist_ok=True)
+    mi_scores.to_csv("results/mi_scores_after_fe.csv", header=True)
+
+    plt.figure(dpi=100, figsize=(10, 16))
     plot_mi_scores(mi_scores)
-    plt.savefig('before_fe/mi_scores.png')
+    plt.tight_layout()
+    plt.savefig("results/mi_scores_after_fe.png", bbox_inches="tight")
+    print("Saved MI scores plot to results/mi_scores_after_fe.png and CSV to results/mi_scores_after_fe.csv")
+

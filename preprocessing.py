@@ -102,3 +102,35 @@ first_review_date = pd.to_datetime(df["first_review"], errors="coerce")
 df["days_since_first_review"] = (reference_date - first_review_date).dt.days
 
 df = df.drop(columns=["first_review", "last_review"], errors="ignore")
+
+# ----------------------- REVIEW SCORE COMPOSITE -----------------------
+# Weighted average of the four main review sub-scores, normalized to [0, 1].
+# Weights reflect how much each dimension typically influences booking decisions:
+#   location & cleanliness tend to drive price more than check-in logistics.
+_review_weights = {
+    "review_scores_rating":       0.35,
+    "review_scores_cleanliness":  0.25,
+    "review_scores_location":     0.25,
+    "review_scores_value":        0.15,
+}
+_max_score = 5.0  # Airbnb sub-scores are on a 1–5 scale
+
+_weighted_sum = sum(
+    df[col].fillna(df[col].median()) * w
+    for col, w in _review_weights.items()
+)
+df["review_score_composite"] = (_weighted_sum / _max_score).clip(0, 1)
+
+# ----------------------- HOST EXPERIENCE TIER -------------------------
+# Ordinal bucket derived from hosts_time_as_host_years.
+#   0 → new      (< 1 year)
+#   1 → growing  (1–3 years)
+#   2 → experienced (3–5 years)
+#   3 → veteran  (5+ years)
+# More-experienced hosts tend to price listings higher and get better reviews.
+df["host_experience_tier"] = pd.cut(
+    df["hosts_time_as_host_years"].fillna(0),
+    bins=[-float("inf"), 1, 3, 5, float("inf")],
+    labels=[0, 1, 2, 3],
+    right=False,
+).astype(int)

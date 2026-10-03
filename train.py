@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
@@ -66,7 +66,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # Fit the preprocessor and transform the data
 model = Pipeline(steps=[
     ("preprocessor", preprocessor),
-    ("regressor", RandomForestRegressor(n_estimators=100, max_depth=10,random_state=42, n_jobs=-1)),
+    ("regressor", HistGradientBoostingRegressor(max_iter=300, learning_rate=0.08, random_state=42)),
 ])
 
 # Transform the target to log-scale
@@ -81,9 +81,6 @@ preds = np.expm1(preds_log)
 
 mae = mean_absolute_error(y_test, preds)
 rmse = root_mean_squared_error(y_test, preds)
-
-print(preds[:5])
-print(y_test[:5])
 
 print("\n--- Baseline Results ---")
 print(f"Test MAE  : ${mae:.2f}")

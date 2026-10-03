@@ -69,3 +69,13 @@ rmse = root_mean_squared_error(y_test, preds)
 print("\n--- Baseline Results ---")
 print(f"Test MAE  : ${mae:.2f}")
 print(f"Test RMSE : ${rmse:.2f}")
+
+# Calculate percentage errors
+pct_errors = np.abs(preds - y_test) / y_test
+# Accuracy thresholds
+print("\n--- Accuracy by Percentage Threshold ---")
+for threshold in [0.10, 0.20, 0.30]:
+    count = np.sum(pct_errors <= threshold)
+    pct = (count / len(y_test)) * 100
+    print(f"Within ±{int(threshold * 100)}%: {count:>5} / {len(y_test)} ({pct:.1f}%)")
+    

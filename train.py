@@ -7,7 +7,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 
 import preprocessing
 
@@ -37,7 +37,10 @@ numerical_cols = X.select_dtypes(include=[np.number]).columns.tolist()
 categorical_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
 
 # Building imputers for missing values
-numeric_transformer = SimpleImputer(strategy="median")
+numeric_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="median")),
+    ("scaler", StandardScaler()),
+])
 
 categorical_transformer = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="most_frequent")),
@@ -60,10 +63,16 @@ model = Pipeline(steps=[
     ("regressor", RandomForestRegressor(n_estimators=100, max_depth=10,random_state=42, n_jobs=-1)),
 ])
 
-print(f"Training baseline model on {len(X_train)} samples with {X.shape[1]} features...")
-model.fit(X_train, y_train)
+# Transform the target to log-scale
+y_train_log = np.log1p(y_train)
 
-preds = model.predict(X_test)
+
+print(f"Training baseline model on {len(X_train)} samples with {X.shape[1]} features...")
+model.fit(X_train, y_train_log)
+
+preds_log = model.predict(X_test)
+preds = np.expm1(preds_log)
+
 mae = mean_absolute_error(y_test, preds)
 rmse = root_mean_squared_error(y_test, preds)
 

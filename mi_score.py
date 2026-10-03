@@ -106,6 +106,11 @@ if __name__ == "__main__":
         "estimated_revenue_l365d", "calendar_last_scraped"
     ]
     X = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
+    
+    # Drop completely empty columns
+    all_null_cols = X.columns[X.isna().all()].tolist()
+    if all_null_cols:
+        X = X.drop(columns=all_null_cols)
     y = df["price"]
 
     print(f"Calculating MI scores on {X.shape[0]} rows and {X.shape[1]} features...")

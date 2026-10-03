@@ -30,6 +30,12 @@ cols_to_drop = [
 ]
 
 X = df.drop(columns=[c for c in cols_to_drop if c in df.columns])
+
+# Drop completely empty columns
+all_null_cols = X.columns[X.isna().all()].tolist()
+if all_null_cols:
+    X = X.drop(columns=all_null_cols)
+
 y = df["price"].values
 
 # Identify categorical and numerical features

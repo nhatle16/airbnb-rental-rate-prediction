@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
@@ -50,3 +50,22 @@ preprocessor = ColumnTransformer(
         ("cat", categorical_transformer, categorical_cols),
     ]
 )
+
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Fit the preprocessor and transform the data
+model = Pipeline(steps=[
+    ("preprocessor", preprocessor),
+    ("regressor", RandomForestRegressor(n_estimators=100, max_depth=10,random_state=42, n_jobs=-1)),
+])
+
+print(f"Training baseline model on {len(X_train)} samples with {X.shape[1]} features...")
+model.fit(X_train, y_train)
+
+preds = model.predict(X_test)
+mae = mean_absolute_error(y_test, preds)
+rmse = root_mean_squared_error(y_test, preds)
+print("\n--- Baseline Results ---")
+print(f"Test MAE  : ${mae:.2f}")
+print(f"Test RMSE : ${rmse:.2f}")

@@ -5,9 +5,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler, TargetEncoder
 
 import preprocessing
 
@@ -40,15 +40,29 @@ y = df["price"].values
 
 # Identify categorical and numerical features
 numerical_cols = X.select_dtypes(include=[np.number]).columns.tolist()
-categorical_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
 
-# Building imputers for missing values
+# High-cardinality location & property features benefit strongly from Target Encoding
+high_card_cols = ["neighbourhood_cleansed", "neighbourhood_group_cleansed", "property_type"]
+low_card_cols = [
+    c for c in X.select_dtypes(exclude=[np.number]).columns if c not in high_card_cols
+]
+
+# Building imputers, encoders, and scalers
 numeric_transformer = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="median")),
     ("scaler", StandardScaler()),
 ])
 
-categorical_transformer = Pipeline(steps=[
+high_card_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("target_encoder", TargetEncoder(
+        target_type="continuous",
+        cv=KFold(n_splits=5, shuffle=True, random_state=42),
+        smooth="auto",
+    )),
+])
+
+low_card_transformer = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="most_frequent")),
     ("encoder", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)),
 ])
@@ -56,7 +70,8 @@ categorical_transformer = Pipeline(steps=[
 preprocessor = ColumnTransformer(
     transformers=[
         ("num", numeric_transformer, numerical_cols),
-        ("cat", categorical_transformer, categorical_cols),
+        ("high_card", high_card_transformer, high_card_cols),
+        ("low_card", low_card_transformer, low_card_cols),
     ]
 )
 

@@ -147,15 +147,11 @@ def engineer_quality_and_host(df: pd.DataFrame) -> pd.DataFrame:
     }
     if available_weights:
         total_weight = sum(available_weights.values())
-        # Compute weighted sum as a pd.Series
         weighted_sum = pd.Series(0.0, index=df.index)
         for col, weight in available_weights.items():
-            median_val = df[col].median()
-            filled_col = df[col].fillna(median_val if not pd.isna(median_val) else 0.0)
-            weighted_sum = weighted_sum + (filled_col * (weight / total_weight))
+            weighted_sum = weighted_sum + df[col] * (weight / total_weight)
 
         max_score = 5.0
-        # Explicitly pd.Series.clip to avoid IDE type inference warning
         df["review_score_composite"] = (weighted_sum / max_score).clip(lower=0.0, upper=1.0)
 
     # 2. Host Experience Tier
